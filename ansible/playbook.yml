@@ -1,0 +1,63 @@
+---
+
+# https://docs.openstack.org/devstack/latest/
+# https://www.youtube.com/watch?v=ozUvALQw5T8
+
+- hosts: all
+  become: true
+  become_method: sudo
+
+  vars:
+    admin_password: secret
+
+  tasks:
+
+  - name: install packages
+    apt:
+      name: "{{ item }}"
+      state: present
+      autoclean: yes
+      update_cache: yes
+      cache_valid_time: 3600
+    with_items:
+    - git
+
+  - name: add openstack user
+    user:
+      name: stack
+      shell: /bin/bash
+      home: /opt/stack
+
+  - name: create sudoers.d/stack
+    file:
+      path: /etc/sudoers.d/stack
+      owner: root
+      group: root
+      mode: 0644
+      state: touch
+
+  - name: add stack user to sudo
+    lineinfile:
+      path: /etc/sudoers.d/stack
+      line: 'stack ALL=(ALL) NOPASSWD: ALL'
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: clone devstack
+    git:
+      repo: 'https://git.openstack.org/openstack-dev/devstack'
+      dest: /opt/stack/devstack
+    become_user: stack
+
+  - name: create local.conf
+    template:
+      src: templates/local.conf.j2
+      dest: /opt/stack/devstack/local.conf
+    become_user: stack
+
+  - name: install devstack
+    script: /opt/stack/devstack/stack.sh
+    become_user: stack
+
+...
