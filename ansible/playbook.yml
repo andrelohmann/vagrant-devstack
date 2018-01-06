@@ -21,6 +21,7 @@
       cache_valid_time: 3600
     with_items:
     - git
+    - htop
 
   - name: add openstack user
     user:
@@ -39,10 +40,11 @@
   - name: add stack user to sudo
     lineinfile:
       path: /etc/sudoers.d/stack
-      line: 'stack ALL=(ALL) NOPASSWD: ALL'
+      line: "stack ALL=(ALL) NOPASSWD: ALL"
       owner: root
       group: root
       mode: 0644
+      validate: 'visudo -cf %s'
 
   - name: clone devstack
     git:
@@ -56,8 +58,9 @@
       dest: /opt/stack/devstack/local.conf
     become_user: stack
 
-  - name: install devstack
-    script: /opt/stack/devstack/stack.sh
+  - name: stack it
+    command: "chdir=~/devstack ./stack.sh"
+    ignore_errors: yes
     become_user: stack
 
 ...
